@@ -3,8 +3,6 @@ import numpy as np
 import copy 
 import time
 
-from sklearn.cluster import AgglomerativeClustering
-
 from voxel_slam.model import VoxelGrid
 from voxel_slam.model import PCDPlane 
 from voxel_slam.utility import generate_unique_colors
@@ -64,51 +62,6 @@ class VoxelFeatureMap:
                     voxel_feature_map[voxel_id][pose_id] = max_plane
 
         return voxel_feature_map
-    
-    @staticmethod
-    def filter_redundant_voxels(voxel_feature_map, min_valid_poses=2):
-        redundant_voxels = []
-        for voxel_center, pose_to_points in  voxel_feature_map.items():
-            if len(pose_to_points) < min_valid_poses:
-                redundant_voxels.append(voxel_center)
-
-        for voxel_center in redundant_voxels:
-            voxel_feature_map.pop(voxel_center)
-
-    @staticmethod
-    def filter_voxel_features(voxel_feature_map, cosine_distance_threshold=0.2):
-        for voxel_id, pose_to_points in voxel_feature_map.items():
-            normals = [plane.get_plane_equation()[:-1] for plane in pose_to_points.values()]
-            if len(normals) < 2:
-                continue
-            
-            clustering = AgglomerativeClustering(
-                n_clusters=None,
-                distance_threshold=cosine_distance_threshold,
-                metric="cosine",
-                linkage="single",
-                compute_distances=True 
-            ).fit(np.asarray(normals))
-
-            stable_plane_label = np.bincount(clustering.labels_).argmax()
-            outlier_plane_poses = np.asarray(list(pose_to_points.keys()))[clustering.labels_ != stable_plane_label]
-            for pose_id in outlier_plane_poses:
-                pose_to_points.pop(pose_id)
-            
-            # TODO: Unite with previous steps
-            # Add filter by D
-            planes_d = [plane.get_plane_equation()[-1] for plane in pose_to_points.values()]
-            if len(planes_d) < 2:
-                continue
-
-            clustering_d = AgglomerativeClustering(
-                n_clusters=2,
-            ).fit(np.asarray(planes_d).reshape(-1, 1))
-
-            stable_plane_label = np.bincount(clustering_d.labels_).argmax()
-            outlier_plane_poses = np.asarray(list(pose_to_points.keys()))[clustering_d.labels_ != stable_plane_label]
-            for pose_id in outlier_plane_poses:
-                pose_to_points.pop(pose_id)
     
     def get_colored_feature_clouds(self, voxel_feature_map, color_method="voxel"):
         time_init_start = time.perf_counter_ns()
