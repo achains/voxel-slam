@@ -1,7 +1,3 @@
-import sys
-sys.dont_write_bytecode = True
-
-
 import voxel_slam.utility
 from voxel_slam.utility import * 
 

@@ -1,6 +1,5 @@
 import mrob 
 import numpy as np
-import copy 
 
 __all__ = ["FGraph"]
 
@@ -10,7 +9,7 @@ class FGraph:
         self.graph = FGraph.init_graph(voxel_feature_map, number_of_poses)
     
     @staticmethod
-    def init_graph(voxel_feature_map, number_of_poses):
+    def init_graph(voxel_feature_map, number_of_poses, plane_backend="ef"):
         graph = mrob.FGraph()
 
         for i in range(number_of_poses):
@@ -18,7 +17,10 @@ class FGraph:
             pose_id = graph.add_node_pose_3d(mrob.geometry.SE3(), node_mode)
         
         for _ in range(len(voxel_feature_map)):
-            feature_id = graph.add_eigen_factor_plane()
+            if plane_backend == "ef":
+                feature_id = graph.add_eigen_factor_plane()
+            elif plane_backend == "bareg":
+                feature_id = graph.add_bareg_plane()
         
         for feature_id, voxel_center in enumerate(voxel_feature_map):
             for pose_id, feature_cloud in voxel_feature_map[voxel_center].items():
