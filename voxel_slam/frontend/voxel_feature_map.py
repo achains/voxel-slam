@@ -4,26 +4,16 @@ import copy
 import time
 
 from sklearn.cluster import AgglomerativeClustering
-from distinctipy import distinctipy
 
 from voxel_slam.model import VoxelGrid
 from voxel_slam.model import PCDPlane 
+from voxel_slam.utility import generate_unique_colors
 
 __all__ = ['VoxelFeatureMap']
 
 
-# TODO: remove
-def custom_gen_unique_colors(number_of_colors):
-    np.random.seed(42)
-    unique_color_set = set()
-    while len(unique_color_set) < number_of_colors:
-        unique_color_set.add(tuple(np.random.rand(1, 3)[0]))
-    return list(unique_color_set)
-
-
 class VoxelFeatureMap:
-    # unique_colors = distinctipy.get_colors(300, rng=42)
-    unique_colors = custom_gen_unique_colors(300)
+    unique_colors = generate_unique_colors(300)
     def __init__(self, clouds, poses, voxel_size):
         self._transformed_clouds = [copy.deepcopy(pcd).transform(pose) for pcd, pose in zip(clouds, poses)]
         self._voxel_to_pose_points_map = self.build_voxel_map_(voxel_size=voxel_size)
@@ -74,16 +64,22 @@ class VoxelFeatureMap:
                     voxel_feature_map[voxel_id][pose_id] = max_plane
 
         return voxel_feature_map
+    
+    @staticmethod
+    def filter_redundant_voxels(voxel_feature_map, min_valid_poses=2):
+        redundant_voxels = []
+        for voxel_center, pose_to_points in  voxel_feature_map.items():
+            if len(pose_to_points) < min_valid_poses:
+                redundant_voxels.append(voxel_center)
+
+        for voxel_center in redundant_voxels:
+            voxel_feature_map.pop(voxel_center)
 
     @staticmethod
-    def filter_voxel_features(voxel_feature_map, cosine_distance_threshold=0.2, preserve_non_informative_voxels=False):
-        non_informative_voxels = []
-
+    def filter_voxel_features(voxel_feature_map, cosine_distance_threshold=0.2):
         for voxel_id, pose_to_points in voxel_feature_map.items():
             normals = [plane.get_plane_equation()[:-1] for plane in pose_to_points.values()]
             if len(normals) < 2:
-                if not preserve_non_informative_voxels:
-                    non_informative_voxels.append(voxel_id)
                 continue
             
             clustering = AgglomerativeClustering(
@@ -103,8 +99,6 @@ class VoxelFeatureMap:
             # Add filter by D
             planes_d = [plane.get_plane_equation()[-1] for plane in pose_to_points.values()]
             if len(planes_d) < 2:
-                if not preserve_non_informative_voxels:
-                    non_informative_voxels.append(voxel_id)
                 continue
 
             clustering_d = AgglomerativeClustering(
@@ -115,16 +109,8 @@ class VoxelFeatureMap:
             outlier_plane_poses = np.asarray(list(pose_to_points.keys()))[clustering_d.labels_ != stable_plane_label]
             for pose_id in outlier_plane_poses:
                 pose_to_points.pop(pose_id)
-
-            if len(voxel_feature_map[voxel_id]) < 2:
-                if not preserve_non_informative_voxels:
-                    non_informative_voxels.append(voxel_id)
-        
-        # Remove voxels that cover less than two poses
-        for voxel_id in non_informative_voxels:
-            voxel_feature_map.pop(voxel_id)
     
-    def get_colored_feature_clouds(self, voxel_feature_map, color_method="pose"):
+    def get_colored_feature_clouds(self, voxel_feature_map, color_method="voxel"):
         time_init_start = time.perf_counter_ns()
         allowed_methods = ["pose", "voxel"]
         if color_method not in allowed_methods:
