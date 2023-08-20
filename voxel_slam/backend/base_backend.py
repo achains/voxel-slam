@@ -17,7 +17,7 @@ class BaseBackend(ABC):
     def init_poses(self, number_of_poses) -> int:
         pose_id = self._graph.add_node_pose_3d(mrob.geometry.SE3(), mrob.NODE_ANCHOR)
         for _ in range(number_of_poses - 1):
-            pose_id = self._graph.add_nose_pose3d(mrob.geometry.SE3(), mrob.NODE_STANDART)
+            pose_id = self._graph.add_node_pose_3d(mrob.geometry.SE3(), mrob.NODE_STANDARD)
         return pose_id 
     
     @abstractmethod
@@ -36,12 +36,12 @@ class BaseBackend(ABC):
 
     def get_optimized_poses(self, number_of_iterations, verbose=False):
         if verbose:
-            print("FGraph initial error:", self.graph.chi2(True))
+            print("FGraph initial error:", self._graph.chi2(True))
 
-        converge_iterations = self.graph.solve(mrob.LM_ELLIPS, number_of_iterations)
+        converge_iterations = self._graph.solve(mrob.LM_ELLIPS, number_of_iterations)
 
         if verbose:
             print("Iteratios to converge:", converge_iterations)
-            print("Chi2:", self.graph.chi2())
+            print("Chi2:", self._graph.chi2())
         
-        return self.graph.get_estimated_state(), (converge_iterations != 0)
+        return self._graph.get_estimated_state(), (converge_iterations != 0)

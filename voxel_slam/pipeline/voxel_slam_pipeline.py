@@ -1,9 +1,9 @@
-from voxel_slam.frontend import VoxelFeatureMap, VoxelFilter
+from voxel_slam.frontend.voxel_feature_map import VoxelFeatureMap
+from voxel_slam.frontend.voxel_feature_filters import VoxelFilter
 from voxel_slam.backend.base_backend import BaseBackend
 from voxel_slam.pipeline import PipelineConfig
 
-
-__all__ = ["VoxelSlamPipeline"]
+__all__ = ["VoxelSLAMPipeline"]
 
 
 class VoxelSLAMPipeline:
