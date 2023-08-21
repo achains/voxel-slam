@@ -1,37 +1,10 @@
-from __future__ import annotations
+from voxel_slam.frontend.filter.base_filter import AbstractVoxelFilter
+from sklearn.cluster import AgglomerativeClustering
 
 import numpy as np
 
-from abc import ABC, abstractmethod
-from sklearn.cluster import AgglomerativeClustering
-
 __all__ = ["NormalsFilter", "PlaneDistanceFilter", "EmptyVoxelsFilter"]
 
-
-class VoxelFilter(ABC):
-    @abstractmethod
-    def set_next(self, filter: VoxelFilter) -> VoxelFilter:
-        pass 
-
-    @abstractmethod
-    def filter(self, voxel_feature_map):
-        pass 
-
-
-class AbstractVoxelFilter(VoxelFilter):
-    _next_filter: VoxelFilter = None 
-
-    def set_next(self, filter: VoxelFilter) -> VoxelFilter:
-        self._next_filter = filter
-        return filter
-    
-    @abstractmethod
-    def filter(self, voxel_feature_map):
-        if self._next_filter:
-            self._next_filter.filter(voxel_feature_map)
-        
-        return None 
-    
 
 class NormalsFilter(AbstractVoxelFilter):
     def __init__(self, cosine_distance_threshold) -> None:

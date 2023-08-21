@@ -1,5 +1,5 @@
 from voxel_slam.frontend.voxel_feature_map import VoxelFeatureMap
-from voxel_slam.frontend.voxel_feature_filters import VoxelFilter
+from voxel_slam.frontend.filter import VoxelFilter
 from voxel_slam.backend.base_backend import BaseBackend
 from voxel_slam.pipeline import PipelineConfig
 
@@ -22,5 +22,5 @@ class VoxelSLAMPipeline:
         backend = self._optimization_backend(feature_map, len(poses))
         optimized_poses, is_converged = backend.get_optimized_poses(self._config.backend_number_of_iterations, 
                                                                     self._config.backend_verbose)
-        return voxel_map.get_colored_feature_clouds(feature_map), optimized_poses      
-
+        colored_clouds, color_to_voxel_id = voxel_map.get_colored_feature_clouds(feature_map)
+        return colored_clouds, color_to_voxel_id, optimized_poses      
