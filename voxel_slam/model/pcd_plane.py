@@ -1,8 +1,8 @@
-import open3d as o3d 
+import open3d as o3d
 import numpy as np
 
 
-__all__ = ['PCDPlane']
+__all__ = ["PCDPlane"]
 
 
 class PCDPlane:
@@ -23,9 +23,9 @@ class PCDPlane:
         return PCDPlane(
             list(np.asarray(self.points)[inliers]),
             list(np.asarray(self.pcd_idx)[inliers]),
-            color=self.color
+            color=self.color,
         )
-    
+
     def get_plane_equation(self):
         c = np.mean(self.points, axis=0)
         A = np.array(self.points) - c

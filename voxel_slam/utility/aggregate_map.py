@@ -1,7 +1,7 @@
-import open3d as o3d 
+import open3d as o3d
 import copy
 
-__all__ = ['aggregate_map']
+__all__ = ["aggregate_map"]
 
 
 def aggregate_map(clouds, poses, enable_color=False, enable_uniform_downsample=False):
@@ -13,5 +13,5 @@ def aggregate_map(clouds, poses, enable_color=False, enable_uniform_downsample=F
             pcd.paint_uniform_color([0.5, 1 - s, (1 - s) / 2])
         pcd.transform(poses[i])
         cloud_map += pcd.uniform_down_sample(2) if enable_uniform_downsample else pcd
-    
+
     return cloud_map

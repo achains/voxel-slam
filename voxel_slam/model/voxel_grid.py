@@ -3,7 +3,7 @@ import open3d as o3d
 
 from dataclasses import dataclass
 
-__all__ = ['VoxelGrid']
+__all__ = ["VoxelGrid"]
 
 
 @dataclass
@@ -14,9 +14,7 @@ class VoxelGrid:
     max_bounds: np.ndarray
     voxel_size: float
 
-    def get_voxel_index(
-        self, point
-    ) -> tuple[int, int, int]:
+    def get_voxel_index(self, point) -> tuple[int, int, int]:
         """
         The method gets the voxel index for a given point
         Implemented according to the corresponding Open3D method
@@ -27,9 +25,7 @@ class VoxelGrid:
         x_index, y_index, z_index = np.floor(ref_coord).astype(int)
         return x_index, y_index, z_index
 
-    def get_voxel_coordinates(
-        self, point
-    ) -> tuple[float, float, float]:
+    def get_voxel_coordinates(self, point) -> tuple[float, float, float]:
         """
         The method gets the voxel coordinates for a given point
         Implemented according to the corresponding Open3D method
