@@ -39,9 +39,9 @@ class BaseBackend(ABC):
             print("FGraph initial error:", self._graph.chi2(True))
 
         converge_iterations = self._graph.solve(mrob.LM_ELLIPS, number_of_iterations)
-
+        chi2 = self._graph.chi2()
         if verbose:
             print("Iteratios to converge:", converge_iterations)
-            print("Chi2:", self._graph.chi2())
+            print("Chi2:", chi2)
         
-        return self._graph.get_estimated_state(), (converge_iterations != 0)
+        return self._graph.get_estimated_state(), (converge_iterations != 0), chi2

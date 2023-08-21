@@ -11,3 +11,4 @@ class PipelineConfig:
     filter_min_valid_poses: int = 2
     backend_number_of_iterations: int = 1000
     backend_verbose: bool = False
+    voxel_color_method: str = None

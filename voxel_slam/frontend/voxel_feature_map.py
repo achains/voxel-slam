@@ -64,13 +64,10 @@ class VoxelFeatureMap:
         return voxel_feature_map
     
     def get_colored_feature_clouds(self, voxel_feature_map, color_method="voxel"):
-        time_init_start = time.perf_counter_ns()
         allowed_methods = ["pose", "voxel"]
         if color_method not in allowed_methods:
             raise TypeError(f"Color method has to be one of {'|'.join(allowed_methods)}")
         colored_clouds = self.transformed_clouds
-
-        print("Time (init):", (time.perf_counter_ns() - time_init_start) / 1e9)  
 
         color_to_voxel_center = {}
 
