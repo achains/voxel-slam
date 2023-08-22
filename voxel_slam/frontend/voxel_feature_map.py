@@ -18,10 +18,15 @@ class VoxelFeatureMap:
             copy.deepcopy(pcd).transform(pose) for pcd, pose in zip(clouds, poses)
         ]
         self._voxel_to_pose_points_map = self.build_voxel_map_(voxel_size=voxel_size)
+        self._voxel_size = voxel_size
 
     @property
     def transformed_clouds(self):
         return copy.deepcopy(self._transformed_clouds)
+    
+    @property
+    def voxel_size(self):
+        return self._voxel_size
 
     @staticmethod
     def find_cloud_bounds(clouds):
