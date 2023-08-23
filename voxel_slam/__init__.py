@@ -12,3 +12,6 @@ from voxel_slam.backend import *
 
 import voxel_slam.pipeline
 from voxel_slam.pipeline import *
+
+import voxel_slam.model
+from voxel_slam.model import *

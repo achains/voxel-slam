@@ -23,7 +23,7 @@ class VoxelFeatureMap:
     @property
     def transformed_clouds(self):
         return copy.deepcopy(self._transformed_clouds)
-    
+
     @property
     def voxel_size(self):
         return self._voxel_size
@@ -49,7 +49,7 @@ class VoxelFeatureMap:
                 if not np.any(point):
                     continue
 
-                voxel_center = voxel_grid.get_voxel_index(point)
+                voxel_center = voxel_grid.get_voxel_coordinates(point)
                 if voxel_center not in voxel_to_pose_points_map:
                     voxel_to_pose_points_map[voxel_center] = {}
 
