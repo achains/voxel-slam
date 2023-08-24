@@ -2,10 +2,10 @@ import open3d as o3d
 import numpy as np
 
 
-__all__ = ["PCDPlane"]
+__all__ = ["VoxelPoints"]
 
 
-class PCDPlane:
+class VoxelPoints:
     def __init__(self, points: list, pcd_idx: list, color=None) -> None:
         if color is None:
             color = [0.0, 0.0, 0.0]
@@ -20,7 +20,7 @@ class PCDPlane:
     def segment_max_plane(self, ransac_distance_threshold):
         pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(self.points))
         _, inliers = pcd.segment_plane(ransac_distance_threshold, 3, 1000)
-        return PCDPlane(
+        return VoxelPoints(
             list(np.asarray(self.points)[inliers]),
             list(np.asarray(self.pcd_idx)[inliers]),
             color=self.color,

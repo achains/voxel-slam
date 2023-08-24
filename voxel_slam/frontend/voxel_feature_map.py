@@ -1,13 +1,16 @@
 import open3d as o3d
 import numpy as np
 import copy
-import time
+
+from collections import namedtuple
 
 from voxel_slam.model import VoxelGrid
-from voxel_slam.model import PCDPlane
+from voxel_slam.model import VoxelPoints
 from voxel_slam.utility import generate_unique_colors
 
-__all__ = ["VoxelFeatureMap"]
+__all__ = ["VoxelFeatureMap", "VoxelKey"]
+
+VoxelKey = namedtuple("VoxelKey", ["centroid", "size"])
 
 
 class VoxelFeatureMap:
@@ -18,7 +21,6 @@ class VoxelFeatureMap:
             copy.deepcopy(pcd).transform(pose) for pcd, pose in zip(clouds, poses)
         ]
         self._voxel_to_pose_points_map = self.build_voxel_map_(voxel_size=voxel_size)
-        self._voxel_size = voxel_size
 
     @property
     def transformed_clouds(self):
@@ -50,16 +52,15 @@ class VoxelFeatureMap:
                     continue
 
                 voxel_center = voxel_grid.get_voxel_coordinates(point)
-                if voxel_center not in voxel_to_pose_points_map:
-                    voxel_to_pose_points_map[voxel_center] = {}
+                voxel_key = VoxelKey(voxel_center, voxel_size)
+                if voxel_key not in voxel_to_pose_points_map:
+                    voxel_to_pose_points_map[voxel_key] = {}
 
-                voxel_pose_points = voxel_to_pose_points_map[voxel_center].get(
-                    pose_id, PCDPlane(points=[], pcd_idx=[])
+                voxel_pose_points = voxel_to_pose_points_map[voxel_key].get(
+                    pose_id, VoxelPoints(points=[], pcd_idx=[])
                 )
                 voxel_pose_points.add_point(point, point_id)
-                voxel_to_pose_points_map[voxel_center].update(
-                    {pose_id: voxel_pose_points}
-                )
+                voxel_to_pose_points_map[voxel_key].update({pose_id: voxel_pose_points})
 
         return voxel_to_pose_points_map
 
@@ -69,10 +70,10 @@ class VoxelFeatureMap:
         points_filter_function=lambda feature_points: True,
     ):
         voxel_feature_map = {
-            voxel_id: {} for voxel_id in self._voxel_to_pose_points_map.keys()
+            voxel_key: {} for voxel_key in self._voxel_to_pose_points_map.keys()
         }
 
-        for voxel_id, pose_to_points in self._voxel_to_pose_points_map.items():
+        for voxel_key, pose_to_points in self._voxel_to_pose_points_map.items():
             for pose_id, pcd_plane in pose_to_points.items():
                 try:
                     max_plane = pcd_plane.segment_max_plane(ransac_distance_threshold)
@@ -80,7 +81,7 @@ class VoxelFeatureMap:
                     continue
 
                 if points_filter_function(np.asarray(max_plane.points)):
-                    voxel_feature_map[voxel_id][pose_id] = max_plane
+                    voxel_feature_map[voxel_key][pose_id] = max_plane
 
         return voxel_feature_map
 
