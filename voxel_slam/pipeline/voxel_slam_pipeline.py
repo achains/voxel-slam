@@ -1,4 +1,4 @@
-from voxel_slam.frontend.voxel_feature_map import VoxelFeatureMap
+from voxel_slam.frontend.voxel_feature_map import VoxelMap
 from voxel_slam.frontend.filter import VoxelFilter
 from voxel_slam.backend.base_backend import BaseBackend
 from voxel_slam.pipeline import PipelineConfig
@@ -32,7 +32,7 @@ class VoxelSLAMPipeline:
         self._config = config
 
     def process(self, clouds, poses) -> VoxelSLAMPipelineOutput:
-        voxel_map = VoxelFeatureMap(clouds, poses, voxel_size=self._config.voxel_size)
+        voxel_map = VoxelMap(clouds, poses, voxel_size=self._config.voxel_size)
         feature_map = voxel_map.extract_voxel_features(
             ransac_distance_threshold=self._config.ransac_distance_threshold
         )

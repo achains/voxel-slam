@@ -44,7 +44,7 @@ class VoxelMap:
     """
     unique_colors = generate_unique_colors(300)
 
-    def __init__(self, clouds: List[o3d.geometry.PointCloud], poses: List[np.ndarray((4, 4))], voxel_size: float) -> None:
+    def __init__(self, clouds: List[o3d.geometry.PointCloud], poses: List, voxel_size: float) -> None:
         self.number_of_poses = len(poses)
 
         if len(clouds) != self.number_of_poses:
@@ -88,7 +88,7 @@ class VoxelMap:
             max_bound = np.maximum(max_bound, pcd.get_max_bound())
         return min_bound, max_bound
     
-    def adaptive_feature_extraction(self, ransac_distance_threshold: float, adaptive_voxel_size: float) -> None:
+    def adaptive_feature_extraction(self, ransac_distance_threshold: float, adaptive_voxel_size: float) -> Dict[Point3D, Dict[int, VoxelPoints]]:
         """Plane feature extraction with adaptive voxelization 
         Important note: Adaptive feature extraction changes inner representation of voxel map
 
@@ -98,18 +98,24 @@ class VoxelMap:
             Maximum distance a point can have to an estimated plane to be considered an inlier
         adaptive_voxel_size: float
             Break down missmatched voxels into octants until their size is greater than adaptive_voxel_size
+
+        Returns
+        -------
+        voxel_feature_map: Dict[Point3D, Dict[int, VoxelPoints]]
+            Voxel map features. For each voxel center there is a "pose_id-to-feature" map.
+            i.g. For each voxel we have feature points lying in it according to pose number
         """
         has_breakable_voxels = True
         while has_breakable_voxels:
             voxel_feature_map = self.extract_voxel_features(ransac_distance_threshold)
             EmptyVoxelsFilter(min_voxel_poses=self.number_of_poses).filter(voxel_feature_map)
-            inconsistent_voxels = self._find_inconsistent_voxels()
+            inconsistent_voxels = self._find_inconsistent_voxels(voxel_feature_map)
             has_breakable_voxels = self._break_map_on_octants(inconsistent_voxels, adaptive_voxel_size)
 
         return voxel_feature_map
             
     
-    def extract_voxel_features(self, ransac_distance_threshold: float) -> None:
+    def extract_voxel_features(self, ransac_distance_threshold: float) -> Dict[Point3D, Dict[int, VoxelPoints]]:
         """Plane feature extraction from voxels 
 
         Parameters
@@ -119,6 +125,12 @@ class VoxelMap:
         adaptive_voxel_size: float, default=None
             Break down missmatched voxels into octants until their size is greater than adaptive_voxel_size
             If None was given skip break down stage
+
+        Returns
+        -------
+        voxel_feature_map: Dict[Point3D, Dict[int, VoxelPoints]]
+            Voxel map features. For each voxel center there is a "pose_id-to-feature" map.
+            i.g. For each voxel we have feature points lying in it according to pose number
         """
         voxel_feature_map = {
             voxel_key: {} for voxel_key in self._voxel_to_pose_points_map.keys()
@@ -129,6 +141,8 @@ class VoxelMap:
                     max_plane = points.segment_max_plane(ransac_distance_threshold)
                 except RuntimeError:
                     pass
+
+                voxel_feature_map[voxel_key][pose_id] = max_plane
 
         return voxel_feature_map
     
@@ -175,13 +189,21 @@ class VoxelMap:
                             octo_points = self._voxel_to_pose_points_map[octant_key].get(pose_id, VoxelPoints([], []))
                             octo_points.add_point(point, point_id)
                             self._voxel_to_pose_points_map[octant_key].update({pose_id: octo_points})
+            # Pop old voxel center
+            self._voxel_to_pose_points_map.pop(voxel_key)
 
         return found_inconsistent
         
         
-    def _find_inconsistent_voxels(self) -> List[VoxelKey]:
+    def _find_inconsistent_voxels(self, voxel_feature_map: Dict[Point3D, Dict[int, VoxelPoints]]) -> List[VoxelKey]:
         """Get list of ambiguous inconsistent voxels.
         Voxel is considered ambiguous if it has normals in different directions throughout the poses.
+
+        Parameters
+        ----------
+        voxel_feature_map: Dict[Point3D, Dict[int, VoxelPoints]]
+            Voxel map features. For each voxel center there is a "pose_id-to-feature" map.
+            i.g. For each voxel we have feature points lying in it according to pose number
 
         Returns
         -------
@@ -190,7 +212,7 @@ class VoxelMap:
         """
         inconsistent_voxels = []
 
-        for voxel_id, pose_to_points in self._voxel_to_pose_points_map.items():
+        for voxel_id, pose_to_points in voxel_feature_map.items():
             normals = []
 
             for pose_id, feature_points in pose_to_points.items():
@@ -211,8 +233,10 @@ class VoxelMap:
         return inconsistent_voxels
     
     def _build_voxel_map(self, voxel_size: float) -> Dict[Point3D, Dict[int, VoxelPoints]]:
-        """Index points and their poses by voxels they are lying in
+        """Index points and their poses by owning voxels
 
+        Parameters
+        ----------
         voxel_size: float
             Initial (i.g. maximal) possible size of a voxel in map
 
@@ -236,7 +260,7 @@ class VoxelMap:
                 voxel_center = voxel_grid.get_voxel_coordinates(point)
                 voxel_key = VoxelKey(voxel_center, voxel_size)
                 if voxel_key not in voxel_to_pose_points_map:
-                    voxel_to_pose_points_map = {}
+                    voxel_to_pose_points_map[voxel_key] = {}
 
                 voxel_pose_points = voxel_to_pose_points_map[voxel_key].get(
                     pose_id, VoxelPoints(points=[], pcd_idx=[])
